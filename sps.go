@@ -142,6 +142,7 @@ func (n *NAL) parseSPS() error {
 
 		if n.VUIParametersPresentFlag {
 			// not implemented
+			fmt.Printf("[WARN] VUIParametersPresentFlag is not implemented\n")
 		}
 
 		// byteOffset += numBits / 8
@@ -157,8 +158,8 @@ func (n *NAL) parseSPS() error {
 		}
 		byteOffset += numBits / 8
 		numBits = numBits % 8
-		fmt.Printf("trail: %02x\n", trail)
-		fmt.Printf("remain: %#v\n", n.RBSPByte[byteOffset:])
+		fmt.Printf("SPS trail: %02x\n", trail)
+		fmt.Printf("SPS remain: %#v\n", n.RBSPByte[byteOffset:])
 	}
 
 	return nil
