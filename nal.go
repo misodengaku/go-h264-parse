@@ -63,7 +63,7 @@ func ParseNAL(data []byte) (NAL, error) {
 		return NAL{}, fmt.Errorf("forbidden_zero_bit is not 0")
 	}
 	n.RefIDC = (data[index] >> 5) & 0x03
-	n.UnitType = data[index] & 0x1f
+	n.UnitType = NALUnitType(data[index] & 0x1f)
 	numBytesInRBSP := 0
 	nalUnitHeaderBytes := 1
 	if n.UnitType == 14 || n.UnitType == 20 || n.UnitType == 21 {
