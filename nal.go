@@ -158,18 +158,22 @@ func decodeExpGolombCode(d []byte, bitOffset int) (uint64, int) {
 	}
 	readBits := uint64(0)
 	startByte = (bitOffset + leadingZeroBits) / 8
-	shift = 7 - ((bitOffset + leadingZeroBits) % 8) - 1
+	if shift == 0 {
+		startByte++
+		shift = 7
+	} else {
+		shift = 7 - ((bitOffset + leadingZeroBits) % 8) - 1
+	}
 	i := 0
+
+ShiftLoop:
 	for _, v := range d[startByte:] {
 		for ; shift >= 0; shift-- {
 			readBits = (readBits << 1) | uint64((v>>shift)&0x01)
 			i++
 			if i >= leadingZeroBits {
-				break
+				break ShiftLoop
 			}
-		}
-		if i <= leadingZeroBits {
-			break
 		}
 		shift = 7
 	}
