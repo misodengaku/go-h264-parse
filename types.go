@@ -16,6 +16,7 @@ type NAL struct {
 	SPS
 	PPS
 	SEI
+	VUI
 }
 
 // Rec. ITU-T H.264 (08/2021) pp.47-48
@@ -83,6 +84,63 @@ type SPS struct {
 	FrameCropBottomOffset           uint64
 	VUIParametersPresentFlag        bool
 }
+
+type VUI struct {
+	// Rec. ITU-T H.264 (08/2021) p.422-423
+	AspectRatioInfoPresentFlag         bool
+	AspectRatioIDC                     byte
+	SARWidth                           uint16
+	SARHeight                          uint16
+	OverscanInfoPresentFlag            bool
+	OverscanAppropriateFlag            bool
+	VideoSignalTypePresentFlag         bool
+	VideoFormat                        byte
+	VideoFullRangeFlag                 bool
+	ColourDescriptionPresentFlag       bool
+	ColourPrimaries                    byte
+	TransferCharacteristics            byte
+	MatrixCoefficients                 byte
+	ChromaLocInfoPresentFlag           bool
+	ChromaSampleLocTypeTopField        uint64
+	ChromaSampleLocTypeBottomField     uint64
+	TimingInfoPresentFlag              bool
+	NumUnitsInTick                     uint32
+	TimeScale                          uint32
+	FixedFrameRateFlag                 bool
+	NALHRDParametersPresentFlag        bool
+	VCLHRDParametersPresentFlag        bool
+	LowDelayHRDFlag                    bool
+	PicStructPresentFlag               bool
+	BitstreamRestrictionFlag           bool
+	MotionVectorsOverPicBoundariesFlag bool
+	MaxBytesPerPicDenom                uint64
+	MaxBitsPerMBDenom                  uint64
+	Log2MaxMVLengthHorizontal          uint64
+	Log2MaxMVLengthVertical            uint64
+	MaxNumReorderFrames                uint64
+	MaxDecFrameBuffering               uint64
+}
+
+const (
+	AspectRatioIDC_Unspecified = 0
+	AspectRatioIDC_1_1         = 1
+	AspectRatioIDC_12_11       = 2
+	AspectRatioIDC_10_11       = 3
+	AspectRatioIDC_16_11       = 4
+	AspectRatioIDC_40_33       = 5
+	AspectRatioIDC_24_11       = 6
+	AspectRatioIDC_20_11       = 7
+	AspectRatioIDC_32_11       = 8
+	AspectRatioIDC_80_33       = 9
+	AspectRatioIDC_18_11       = 10
+	AspectRatioIDC_15_11       = 11
+	AspectRatioIDC_64_33       = 12
+	AspectRatioIDC_160_99      = 13
+	AspectRatioIDC_4_3         = 14
+	AspectRatioIDC_3_2         = 15
+	AspectRatioIDC_2_1         = 16
+	AspectRatioIDC_ExtendedSAR = 255
+)
 
 type NALUnitType byte
 

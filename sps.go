@@ -113,7 +113,6 @@ func (n *NAL) parseSPS() error {
 		numBits++
 
 		if n.FrameCroppingFlag {
-
 			byteOffset += numBits / 8
 			numBits = numBits % 8
 			n.FrameCropLeftOffset, numResultBits = decodeExpGolombCode(n.RBSPByte[byteOffset:], numBits)
@@ -141,8 +140,216 @@ func (n *NAL) parseSPS() error {
 		numBits++
 
 		if n.VUIParametersPresentFlag {
-			// not implemented
-			fmt.Printf("[WARN] VUIParametersPresentFlag is not implemented\n")
+			byteOffset += numBits / 8
+			numBits = numBits % 8
+			n.VUI.AspectRatioInfoPresentFlag = ((n.RBSPByte[byteOffset] >> (7 - numBits)) & 0x01) == 1
+			numBits++
+
+			if n.VUI.AspectRatioInfoPresentFlag {
+				n.VUI.AspectRatioIDC = 0
+				for i := 0; i < 8; i++ {
+					byteOffset += numBits / 8
+					numBits = numBits % 8
+					n.VUI.AspectRatioIDC = (n.VUI.AspectRatioIDC << 1) | ((n.RBSPByte[byteOffset] >> (7 - numBits)) & 0x01)
+					numBits++
+				}
+				if n.VUI.AspectRatioIDC == AspectRatioIDC_ExtendedSAR {
+					n.VUI.SARWidth = 0
+					n.VUI.SARHeight = 0
+					for i := 0; i < 16; i++ {
+						byteOffset += numBits / 8
+						numBits = numBits % 8
+						n.VUI.SARWidth = (n.VUI.SARWidth << 1) | uint16((n.RBSPByte[byteOffset]>>(7-numBits))&0x01)
+						numBits++
+					}
+					for i := 0; i < 16; i++ {
+						byteOffset += numBits / 8
+						numBits = numBits % 8
+						n.VUI.SARHeight = (n.VUI.SARHeight << 1) | uint16((n.RBSPByte[byteOffset]>>(7-numBits))&0x01)
+						numBits++
+					}
+				}
+			}
+
+			byteOffset += numBits / 8
+			numBits = numBits % 8
+			n.VUI.OverscanInfoPresentFlag = ((n.RBSPByte[byteOffset] >> (7 - numBits)) & 0x01) == 1
+			numBits++
+
+			if n.VUI.OverscanInfoPresentFlag {
+				byteOffset += numBits / 8
+				numBits = numBits % 8
+				n.VUI.OverscanAppropriateFlag = ((n.RBSPByte[byteOffset] >> (7 - numBits)) & 0x01) == 1
+				numBits++
+			}
+
+			byteOffset += numBits / 8
+			numBits = numBits % 8
+			n.VUI.VideoSignalTypePresentFlag = ((n.RBSPByte[byteOffset] >> (7 - numBits)) & 0x01) == 1
+			numBits++
+
+			if n.VUI.VideoSignalTypePresentFlag {
+				n.VUI.VideoFormat = 0
+				for i := 0; i < 3; i++ {
+					byteOffset += numBits / 8
+					numBits = numBits % 8
+					n.VUI.VideoFormat = (n.VUI.VideoFormat << 1) | (n.RBSPByte[byteOffset]>>(7-numBits))&0x01
+					numBits++
+				}
+
+				byteOffset += numBits / 8
+				numBits = numBits % 8
+				n.VUI.VideoFullRangeFlag = ((n.RBSPByte[byteOffset] >> (7 - numBits)) & 0x01) == 1
+				numBits++
+
+				byteOffset += numBits / 8
+				numBits = numBits % 8
+				n.VUI.ColourDescriptionPresentFlag = ((n.RBSPByte[byteOffset] >> (7 - numBits)) & 0x01) == 1
+				numBits++
+
+				if n.VUI.ColourDescriptionPresentFlag {
+
+					n.VUI.ColourPrimaries = 0
+					n.VUI.TransferCharacteristics = 0
+					n.VUI.MatrixCoefficients = 0
+					for i := 0; i < 8; i++ {
+						byteOffset += numBits / 8
+						numBits = numBits % 8
+						n.VUI.ColourPrimaries = (n.VUI.ColourPrimaries << 1) | ((n.RBSPByte[byteOffset] >> (7 - numBits)) & 0x01)
+						numBits++
+					}
+					for i := 0; i < 8; i++ {
+						byteOffset += numBits / 8
+						numBits = numBits % 8
+						n.VUI.TransferCharacteristics = (n.VUI.TransferCharacteristics << 1) | ((n.RBSPByte[byteOffset] >> (7 - numBits)) & 0x01)
+						numBits++
+					}
+					for i := 0; i < 8; i++ {
+						byteOffset += numBits / 8
+						numBits = numBits % 8
+						n.VUI.MatrixCoefficients = (n.VUI.MatrixCoefficients << 1) | ((n.RBSPByte[byteOffset] >> (7 - numBits)) & 0x01)
+						numBits++
+					}
+				}
+			}
+
+			byteOffset += numBits / 8
+			numBits = numBits % 8
+			n.VUI.ChromaLocInfoPresentFlag = ((n.RBSPByte[byteOffset] >> (7 - numBits)) & 0x01) == 1
+			numBits++
+
+			if n.VUI.ChromaLocInfoPresentFlag {
+				byteOffset += numBits / 8
+				numBits = numBits % 8
+				n.VUI.ChromaSampleLocTypeTopField, numResultBits = decodeExpGolombCode(n.RBSPByte[byteOffset:], numBits)
+				numBits += numResultBits
+
+				byteOffset += numBits / 8
+				numBits = numBits % 8
+				n.ChromaSampleLocTypeBottomField, numResultBits = decodeExpGolombCode(n.RBSPByte[byteOffset:], numBits)
+				numBits += numResultBits
+			}
+
+			byteOffset += numBits / 8
+			numBits = numBits % 8
+			n.VUI.TimingInfoPresentFlag = ((n.RBSPByte[byteOffset] >> (7 - numBits)) & 0x01) == 1
+			numBits++
+
+			if n.VUI.TimingInfoPresentFlag {
+				n.VUI.NumUnitsInTick = 0
+				n.VUI.TimeScale = 0
+				for i := 0; i < 32; i++ {
+					byteOffset += numBits / 8
+					numBits = numBits % 8
+					n.VUI.NumUnitsInTick = (n.VUI.NumUnitsInTick << 1) | uint32((n.RBSPByte[byteOffset]>>(7-numBits))&0x01)
+					numBits++
+				}
+				for i := 0; i < 32; i++ {
+					byteOffset += numBits / 8
+					numBits = numBits % 8
+					n.VUI.TimeScale = (n.VUI.TimeScale << 1) | uint32((n.RBSPByte[byteOffset]>>(7-numBits))&0x01)
+					numBits++
+				}
+				byteOffset += numBits / 8
+				numBits = numBits % 8
+				n.VUI.FixedFrameRateFlag = ((n.RBSPByte[byteOffset] >> (7 - numBits)) & 0x01) == 1
+				numBits++
+			}
+
+			byteOffset += numBits / 8
+			numBits = numBits % 8
+			n.VUI.NALHRDParametersPresentFlag = ((n.RBSPByte[byteOffset] >> (7 - numBits)) & 0x01) == 1
+			numBits++
+
+			if n.VUI.NALHRDParametersPresentFlag {
+				// not implemented
+				fmt.Printf("[WARN] NALHRDParametersPresentFlag is not implemented\n")
+			}
+
+			byteOffset += numBits / 8
+			numBits = numBits % 8
+			n.VUI.VCLHRDParametersPresentFlag = ((n.RBSPByte[byteOffset] >> (7 - numBits)) & 0x01) == 1
+			numBits++
+
+			if n.VUI.VCLHRDParametersPresentFlag {
+				// not implemented
+				fmt.Printf("[WARN] VCLHRDParametersPresentFlag is not implemented\n")
+			}
+
+			if n.VUI.NALHRDParametersPresentFlag || n.VUI.VCLHRDParametersPresentFlag {
+				byteOffset += numBits / 8
+				numBits = numBits % 8
+				n.VUI.LowDelayHRDFlag = ((n.RBSPByte[byteOffset] >> (7 - numBits)) & 0x01) == 1
+				numBits++
+			}
+
+			byteOffset += numBits / 8
+			numBits = numBits % 8
+			n.VUI.PicStructPresentFlag = ((n.RBSPByte[byteOffset] >> (7 - numBits)) & 0x01) == 1
+			numBits++
+
+			byteOffset += numBits / 8
+			numBits = numBits % 8
+			n.VUI.BitstreamRestrictionFlag = ((n.RBSPByte[byteOffset] >> (7 - numBits)) & 0x01) == 1
+			numBits++
+
+			if n.VUI.BitstreamRestrictionFlag {
+				byteOffset += numBits / 8
+				numBits = numBits % 8
+				n.VUI.MotionVectorsOverPicBoundariesFlag = ((n.RBSPByte[byteOffset] >> (7 - numBits)) & 0x01) == 1
+				numBits++
+
+				byteOffset += numBits / 8
+				numBits = numBits % 8
+				n.MaxBytesPerPicDenom, numResultBits = decodeExpGolombCode(n.RBSPByte[byteOffset:], numBits)
+				numBits += numResultBits
+
+				byteOffset += numBits / 8
+				numBits = numBits % 8
+				n.MaxBitsPerMBDenom, numResultBits = decodeExpGolombCode(n.RBSPByte[byteOffset:], numBits)
+				numBits += numResultBits
+
+				byteOffset += numBits / 8
+				numBits = numBits % 8
+				n.Log2MaxMVLengthHorizontal, numResultBits = decodeExpGolombCode(n.RBSPByte[byteOffset:], numBits)
+				numBits += numResultBits
+
+				byteOffset += numBits / 8
+				numBits = numBits % 8
+				n.Log2MaxMVLengthVertical, numResultBits = decodeExpGolombCode(n.RBSPByte[byteOffset:], numBits)
+				numBits += numResultBits
+
+				byteOffset += numBits / 8
+				numBits = numBits % 8
+				n.MaxNumReorderFrames, numResultBits = decodeExpGolombCode(n.RBSPByte[byteOffset:], numBits)
+				numBits += numResultBits
+
+				byteOffset += numBits / 8
+				numBits = numBits % 8
+				n.MaxDecFrameBuffering, numResultBits = decodeExpGolombCode(n.RBSPByte[byteOffset:], numBits)
+				numBits += numResultBits
+			}
+			fmt.Printf("%#v\n", n.VUI)
 		}
 
 		// byteOffset += numBits / 8
