@@ -95,7 +95,7 @@ func (n *NAL) parseSPS() error {
 		n.FrameMBSOnlyFlag = ((n.RBSPByte[byteOffset] >> (7 - numBits)) & 0x01) == 1
 		numBits++
 
-		if n.FrameMBSOnlyFlag {
+		if !n.FrameMBSOnlyFlag {
 			byteOffset += numBits / 8
 			numBits = numBits % 8
 			n.MBAdaptiveFrameFieldFlag = ((n.RBSPByte[byteOffset] >> (7 - numBits)) & 0x01) == 1
