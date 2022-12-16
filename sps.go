@@ -381,24 +381,19 @@ func (n *NAL) parseSPS() error {
 				n.MaxDecFrameBuffering, numResultBits = decodeExpGolombCode(n.RBSPByte[byteOffset:], numBits)
 				numBits += numResultBits
 			}
-			fmt.Printf("%#v\n", n.VUI)
 		}
-
-		// byteOffset += numBits / 8
-		// numBits = numBits % 8
 
 		var trail byte
 		for numBits%8 != 0 {
-
 			byteOffset += numBits / 8
 			numBits = numBits % 8
 			trail = trail<<1 | ((n.RBSPByte[byteOffset] >> (7 - numBits)) & 0x01)
 			numBits++
 		}
-		byteOffset += numBits / 8
-		numBits = numBits % 8
-		fmt.Printf("SPS trail: %02x\n", trail)
-		fmt.Printf("SPS remain: %#v\n", n.RBSPByte[byteOffset:])
+		// byteOffset += numBits / 8
+		// numBits = numBits % 8
+		// fmt.Printf("SPS trail: %02x numBits: %d\n", trail, numBits)
+		// fmt.Printf("SPS remain(%d): %#v\n", len(n.RBSPByte)-byteOffset, n.RBSPByte[byteOffset:])
 	}
 
 	return nil

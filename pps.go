@@ -183,10 +183,10 @@ func (n *NAL) parsePPS() error {
 		trail = trail<<1 | ((n.RBSPByte[byteOffset] >> (7 - numBits)) & 0x01)
 		numBits++
 	}
-	byteOffset += numBits / 8
-	numBits = numBits % 8
-	fmt.Printf("trail: %02x\n", trail)
-	fmt.Printf("remain: %#v\n", n.RBSPByte[byteOffset:])
+	// byteOffset += numBits / 8
+	// numBits = numBits % 8
+	// fmt.Printf("PPS trail: %02x numBits: %d\n", trail, numBits)
+	// fmt.Printf("PPS remain(%d): %#v\n", len(n.RBSPByte)-byteOffset, n.RBSPByte[byteOffset:])
 
 	return nil
 }
