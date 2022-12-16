@@ -66,7 +66,7 @@ func ParseNAL(data []byte) (NAL, error) {
 	n.UnitType = NALUnitType(data[index] & 0x1f)
 	numBytesInRBSP := 0
 	nalUnitHeaderBytes := 1
-	if n.UnitType == 14 || n.UnitType == 20 || n.UnitType == 21 {
+	if n.UnitType == PrefixNALUnit || n.UnitType == CodedSliceExtension || n.UnitType == CodedSliceExtensionDepthViewComponentOr3DAVCTextureView {
 		fmt.Printf("[BUG] not implemented\n")
 		// 	if( nal_unit_type ! = 21 )
 		// 		svc_extension_flag All u(1)
