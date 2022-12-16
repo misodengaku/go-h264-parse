@@ -36,8 +36,10 @@ func (n *NAL) parseSPS() error {
 		n.ChromaFormatIDC, numResultBits = decodeExpGolombCode(n.RBSPByte[3:], numBits)
 		numBits += numResultBits
 		if n.ChromaFormatIDC == 3 {
-			// separate_colour_plane_flag 0 u(1)
-			fmt.Printf("[BUG] separate_colour_plane_flag is 1\n")
+			byteOffset += numBits / 8
+			numBits = numBits % 8
+			n.SeparateColourPlaneFlag = ((n.RBSPByte[byteOffset] >> (7 - numBits)) & 0x01) == 1
+			numBits++
 		}
 		n.BitDepthLumaMinus8, numResultBits = decodeExpGolombCode(n.RBSPByte[3:], numBits)
 		numBits += numResultBits
@@ -49,7 +51,7 @@ func (n *NAL) parseSPS() error {
 		n.SeqScalingMatrixPresentFlag = ((n.RBSPByte[byteOffset] >> (6 - numBits)) & 0x01) == 1
 		numBits += 2
 		if n.SeqScalingMatrixPresentFlag {
-			fmt.Printf("[BUG] SeqScalingMatrixPresentFlag is 1\n")
+			fmt.Printf("[WARN] SeqScalingMatrixPresentFlag is 1. not implemented\n")
 			// not implemented
 		}
 		byteOffset += numBits / 8
@@ -63,11 +65,41 @@ func (n *NAL) parseSPS() error {
 		numBits += numResultBits
 
 		if n.PicOrderCntType == 0 {
-			// not implemented
-			fmt.Printf("[BUG] PicOrderCntType is 0\n")
+			byteOffset += numBits / 8
+			numBits = numBits % 8
+			n.Log2MaxPicOrderCntLSBMinus4, numResultBits = decodeExpGolombCode(n.RBSPByte[byteOffset:], numBits)
+			numBits += numResultBits
 		} else if n.PicOrderCntType == 1 {
 			// not implemented
-			fmt.Printf("[BUG] PicOrderCntType is 1\n")
+			fmt.Printf("[WARN] PicOrderCntType is 1. not implemented\n")
+
+			byteOffset += numBits / 8
+			numBits = numBits % 8
+			n.DeltaPicOrderAlwaysZeroFlag = ((n.RBSPByte[byteOffset] >> (7 - numBits)) & 0x01) == 1
+			numBits++
+
+			byteOffset += numBits / 8
+			numBits = numBits % 8
+			n.OffsetForNonRefPic, numResultBits = decodeExpGolombCode(n.RBSPByte[byteOffset:], numBits)
+			numBits += numResultBits
+			byteOffset += numBits / 8
+
+			numBits = numBits % 8
+			n.OffsetForTopToBottomField, numResultBits = decodeExpGolombCode(n.RBSPByte[byteOffset:], numBits)
+			numBits += numResultBits
+			byteOffset += numBits / 8
+
+			numBits = numBits % 8
+			n.NumRefFramesInPicOrderCntCycle, numResultBits = decodeExpGolombCode(n.RBSPByte[byteOffset:], numBits)
+			numBits += numResultBits
+
+			for i := 0; i < int(n.NumRefFramesInPicOrderCntCycle); i++ {
+				var offset uint64
+				numBits = numBits % 8
+				offset, numResultBits = decodeExpGolombCode(n.RBSPByte[byteOffset:], numBits)
+				numBits += numResultBits
+				n.OffsetForRefFrames = append(n.OffsetForRefFrames, offset)
+			}
 		}
 
 		byteOffset += numBits / 8
