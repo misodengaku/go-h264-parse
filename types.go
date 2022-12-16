@@ -64,12 +64,19 @@ type SPS struct {
 	LevelIDC                        byte
 	ID                              uint64
 	ChromaFormatIDC                 uint64
+	SeparateColourPlaneFlag         bool
 	BitDepthLumaMinus8              uint64
 	BitDepthChromaMinus8            uint64
 	QPPrimeYZeroTransformBypassFlag bool
 	SeqScalingMatrixPresentFlag     bool
 	Log2MaxFrameNumMinus4           uint64
 	PicOrderCntType                 uint64
+	Log2MaxPicOrderCntLSBMinus4     uint64
+	DeltaPicOrderAlwaysZeroFlag     bool
+	OffsetForNonRefPic              uint64
+	OffsetForTopToBottomField       uint64
+	NumRefFramesInPicOrderCntCycle  uint64
+	OffsetForRefFrames              []uint64
 	MaxNumRefFrames                 uint64
 	GapsInFrameNumValueAllowedFlag  bool
 	PicWidthInMBSMinus1             uint64
