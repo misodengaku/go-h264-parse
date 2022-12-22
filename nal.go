@@ -86,7 +86,7 @@ func ParseNAL(data []byte) (NAL, error) {
 		// 			nalUnitHeaderBytes += 3
 		// 		}
 	}
-	copy(n.HeaderBytes, data[:nalUnitHeaderBytes])
+	n.HeaderBytes = data[:nalUnitHeaderBytes]
 
 	index := nalUnitHeaderBytes
 
@@ -95,15 +95,12 @@ func ParseNAL(data []byte) (NAL, error) {
 	i := 0
 	for i = index; i < len(data); i++ {
 		if (i+2) < len(data) && (data[i] == 0x00 && data[i+1] == 0x00 && data[i+2] == 0x03) {
-			appendBytes := make([]byte, 2)
-			copy(appendBytes, data[i:i+1])
-			n.RBSPByte = append(n.RBSPByte, appendBytes...)
+			n.RBSPByte = append(n.RBSPByte, data[i], data[i+1])
 			i += 2
 			numBytesInRBSP += 2
 			// 0x03
 		} else {
-			appendByte := data[i]
-			n.RBSPByte = append(n.RBSPByte, appendByte)
+			n.RBSPByte = append(n.RBSPByte, data[i])
 			numBytesInRBSP++
 		}
 	}
