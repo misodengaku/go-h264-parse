@@ -58,15 +58,15 @@ func Marshal(ns NALUs) ([]byte, error) {
 }
 
 func ParseNAL(data []byte) (NAL, error) {
-	index := 0
+	if len(data) == 0 {
+		return NAL{}, fmt.Errorf("data is empty")
+	}
 	n := NAL{}
-	// for index < len(data) {
-	// fmt.Println("index", index)
-	if data[index]>>7&0x01 != 0 {
+	if data[0]>>7&0x01 != 0 {
 		return NAL{}, fmt.Errorf("forbidden_zero_bit is not 0")
 	}
-	n.RefIDC = (data[index] >> 5) & 0x03
-	n.UnitType = NALUnitType(data[index] & 0x1f)
+	n.RefIDC = (data[0] >> 5) & 0x03
+	n.UnitType = NALUnitType(data[0] & 0x1f)
 	numBytesInRBSP := 0
 	nalUnitHeaderBytes := 1
 	if n.UnitType == PrefixNALUnit || n.UnitType == CodedSliceExtension || n.UnitType == CodedSliceExtensionDepthViewComponentOr3DAVCTextureView {
@@ -88,7 +88,7 @@ func ParseNAL(data []byte) (NAL, error) {
 	}
 	copy(n.HeaderBytes, data[:nalUnitHeaderBytes])
 
-	index += nalUnitHeaderBytes
+	index := nalUnitHeaderBytes
 
 	// RBSP
 	n.RBSPByte = make([]byte, 0, 16)
