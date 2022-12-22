@@ -3,23 +3,53 @@ package h264parse
 import "fmt"
 
 func (n *NAL) parseSPS() error {
+	var err error
+	bbr := BitByteReader{}
+	bbr.New(n.RBSPByte)
 
-	numBits := 0
-	byteOffset := 0
-	numResultBits := 0
-
-	n.SPS.ProfileIDC = n.RBSPByte[0]
-	n.SPS.ConstraintSet0Flag = (n.RBSPByte[1] >> 7) & 0x01
-	n.SPS.ConstraintSet1Flag = (n.RBSPByte[1] >> 6) & 0x01
-	n.SPS.ConstraintSet2Flag = (n.RBSPByte[1] >> 5) & 0x01
-	n.SPS.ConstraintSet3Flag = (n.RBSPByte[1] >> 4) & 0x01
-	n.SPS.ConstraintSet4Flag = (n.RBSPByte[1] >> 3) & 0x01
-	if (n.RBSPByte[1] & 0x03) != 0 {
-		return fmt.Errorf("reserved_zero_2bits is not 0")
+	n.SPS.ProfileIDC, err = bbr.ReadByte()
+	if err != nil {
+		return err
 	}
-	n.SPS.LevelIDC = n.RBSPByte[2]
-	n.SPS.ID, numBits = decodeExpGolombCode(n.RBSPByte[3:], 0)
-	byteOffset = 3
+	n.SPS.ConstraintSet0Flag, err = bbr.ReadBool()
+	if err != nil {
+		return err
+	}
+	n.SPS.ConstraintSet1Flag, err = bbr.ReadBool()
+	if err != nil {
+		return err
+	}
+	n.SPS.ConstraintSet2Flag, err = bbr.ReadBool()
+	if err != nil {
+		return err
+	}
+	n.SPS.ConstraintSet3Flag, err = bbr.ReadBool()
+	if err != nil {
+		return err
+	}
+	n.SPS.ConstraintSet4Flag, err = bbr.ReadBool()
+	if err != nil {
+		return err
+	}
+
+	for i := 0; i < 2; i++ {
+
+		bit, err := bbr.ReadBit()
+		if err != nil {
+			return err
+		}
+		if bit != 0 {
+			return fmt.Errorf("reserved_zero_2bits is not 0")
+		}
+	}
+	n.SPS.LevelIDC, err = bbr.ReadByte()
+	if err != nil {
+		return err
+	}
+	n.SPS_ID, err = bbr.ReadExpGolombCode()
+	if err != nil {
+		return err
+	}
 	if n.SPS.ProfileIDC == 100 ||
 		n.SPS.ProfileIDC == 110 ||
 		n.SPS.ProfileIDC == 122 ||
@@ -33,295 +63,284 @@ func (n *NAL) parseSPS() error {
 		n.SPS.ProfileIDC == 139 ||
 		n.SPS.ProfileIDC == 134 ||
 		n.SPS.ProfileIDC == 135 {
-		n.ChromaFormatIDC, numResultBits = decodeExpGolombCode(n.RBSPByte[3:], numBits)
-		numBits += numResultBits
-		if n.ChromaFormatIDC == 3 {
-			byteOffset += numBits / 8
-			numBits = numBits % 8
-			n.SeparateColourPlaneFlag = ((n.RBSPByte[byteOffset] >> (7 - numBits)) & 0x01) == 1
-			numBits++
+
+		n.ChromaFormatIDC, err = bbr.ReadExpGolombCode()
+		if err != nil {
+			return err
 		}
-		n.BitDepthLumaMinus8, numResultBits = decodeExpGolombCode(n.RBSPByte[3:], numBits)
-		numBits += numResultBits
-		n.BitDepthChromaMinus8, numResultBits = decodeExpGolombCode(n.RBSPByte[3:], numBits)
-		numBits += numResultBits
-		byteOffset += numBits / 8
-		numBits = numBits % 8
-		n.QPPrimeYZeroTransformBypassFlag = ((n.RBSPByte[byteOffset] >> (7 - numBits)) & 0x01) == 1
-		n.SeqScalingMatrixPresentFlag = ((n.RBSPByte[byteOffset] >> (6 - numBits)) & 0x01) == 1
-		numBits += 2
+		if n.ChromaFormatIDC == 3 {
+			n.SeparateColourPlaneFlag, err = bbr.ReadBool()
+			if err != nil {
+				return err
+			}
+		}
+		n.BitDepthLumaMinus8, err = bbr.ReadExpGolombCode()
+		if err != nil {
+			return err
+		}
+		n.BitDepthChromaMinus8, err = bbr.ReadExpGolombCode()
+		if err != nil {
+			return err
+		}
+
+		n.QPPrimeYZeroTransformBypassFlag, err = bbr.ReadBool()
+		if err != nil {
+			return err
+		}
+
+		n.SeqScalingMatrixPresentFlag, err = bbr.ReadBool()
+		if err != nil {
+			return err
+		}
+
 		if n.SeqScalingMatrixPresentFlag {
 			fmt.Printf("[WARN] SeqScalingMatrixPresentFlag is 1. not implemented\n")
 			// not implemented
 		}
-		byteOffset += numBits / 8
-		numBits = numBits % 8
-		n.Log2MaxFrameNumMinus4, numResultBits = decodeExpGolombCode(n.RBSPByte[byteOffset:], numBits)
-		numBits += numResultBits
 
-		byteOffset += numBits / 8
-		numBits = numBits % 8
-		n.PicOrderCntType, numResultBits = decodeExpGolombCode(n.RBSPByte[byteOffset:], numBits)
-		numBits += numResultBits
+		n.Log2MaxFrameNumMinus4, err = bbr.ReadExpGolombCode()
+		if err != nil {
+			return err
+		}
+
+		n.PicOrderCntType, err = bbr.ReadExpGolombCode()
+		if err != nil {
+			return err
+		}
 
 		if n.PicOrderCntType == 0 {
-			byteOffset += numBits / 8
-			numBits = numBits % 8
-			n.Log2MaxPicOrderCntLSBMinus4, numResultBits = decodeExpGolombCode(n.RBSPByte[byteOffset:], numBits)
-			numBits += numResultBits
+			n.Log2MaxPicOrderCntLSBMinus4, err = bbr.ReadExpGolombCode()
+			if err != nil {
+				return err
+			}
 		} else if n.PicOrderCntType == 1 {
-			// not implemented
-			fmt.Printf("[WARN] PicOrderCntType is 1. not implemented\n")
+			n.DeltaPicOrderAlwaysZeroFlag, err = bbr.ReadBool()
+			if err != nil {
+				return err
+			}
 
-			byteOffset += numBits / 8
-			numBits = numBits % 8
-			n.DeltaPicOrderAlwaysZeroFlag = ((n.RBSPByte[byteOffset] >> (7 - numBits)) & 0x01) == 1
-			numBits++
+			n.OffsetForNonRefPic, err = bbr.ReadExpGolombCode()
+			if err != nil {
+				return err
+			}
 
-			byteOffset += numBits / 8
-			numBits = numBits % 8
-			n.OffsetForNonRefPic, numResultBits = decodeExpGolombCode(n.RBSPByte[byteOffset:], numBits)
-			numBits += numResultBits
-			byteOffset += numBits / 8
+			n.OffsetForTopToBottomField, err = bbr.ReadExpGolombCode()
+			if err != nil {
+				return err
+			}
 
-			numBits = numBits % 8
-			n.OffsetForTopToBottomField, numResultBits = decodeExpGolombCode(n.RBSPByte[byteOffset:], numBits)
-			numBits += numResultBits
-			byteOffset += numBits / 8
-
-			numBits = numBits % 8
-			n.NumRefFramesInPicOrderCntCycle, numResultBits = decodeExpGolombCode(n.RBSPByte[byteOffset:], numBits)
-			numBits += numResultBits
+			n.NumRefFramesInPicOrderCntCycle, err = bbr.ReadExpGolombCode()
+			if err != nil {
+				return err
+			}
 
 			for i := 0; i < int(n.NumRefFramesInPicOrderCntCycle); i++ {
-				var offset uint64
-				numBits = numBits % 8
-				offset, numResultBits = decodeExpGolombCode(n.RBSPByte[byteOffset:], numBits)
-				numBits += numResultBits
+				offset, err := bbr.ReadExpGolombCode()
+				if err != nil {
+					return err
+				}
 				n.OffsetForRefFrames = append(n.OffsetForRefFrames, offset)
 			}
 		}
 
-		byteOffset += numBits / 8
-		numBits = numBits % 8
-		n.MaxNumRefFrames, numResultBits = decodeExpGolombCode(n.RBSPByte[byteOffset:], numBits)
-		numBits += numResultBits
+		n.MaxNumRefFrames, err = bbr.ReadExpGolombCode()
+		if err != nil {
+			return err
+		}
 
-		byteOffset += numBits / 8
-		numBits = numBits % 8
-		n.GapsInFrameNumValueAllowedFlag = ((n.RBSPByte[byteOffset] >> (7 - numBits)) & 0x01) == 1
-		numBits++
+		n.GapsInFrameNumValueAllowedFlag, err = bbr.ReadBool()
+		if err != nil {
+			return err
+		}
 
-		byteOffset += numBits / 8
-		numBits = numBits % 8
-		n.PicWidthInMBSMinus1, numResultBits = decodeExpGolombCode(n.RBSPByte[byteOffset:], numBits)
-		numBits += numResultBits
+		n.PicWidthInMBSMinus1, err = bbr.ReadExpGolombCode()
+		if err != nil {
+			return err
+		}
 
-		byteOffset += numBits / 8
-		numBits = numBits % 8
-		n.PicHeightInMapUnitsMinus1, numResultBits = decodeExpGolombCode(n.RBSPByte[byteOffset:], numBits)
-		numBits += numResultBits
+		n.PicHeightInMapUnitsMinus1, err = bbr.ReadExpGolombCode()
+		if err != nil {
+			return err
+		}
 
-		byteOffset += numBits / 8
-		numBits = numBits % 8
-		n.FrameMBSOnlyFlag = ((n.RBSPByte[byteOffset] >> (7 - numBits)) & 0x01) == 1
-		numBits++
+		n.FrameMBSOnlyFlag, err = bbr.ReadBool()
+		if err != nil {
+			return err
+		}
 
 		if !n.FrameMBSOnlyFlag {
-			byteOffset += numBits / 8
-			numBits = numBits % 8
-			n.MBAdaptiveFrameFieldFlag = ((n.RBSPByte[byteOffset] >> (7 - numBits)) & 0x01) == 1
-			numBits++
+			n.MBAdaptiveFrameFieldFlag, err = bbr.ReadBool()
+			if err != nil {
+				return err
+			}
 		}
 
-		byteOffset += numBits / 8
-		numBits = numBits % 8
-		n.Direct8x8InferenceFlag = ((n.RBSPByte[byteOffset] >> (7 - numBits)) & 0x01) == 1
-		numBits++
+		n.Direct8x8InferenceFlag, err = bbr.ReadBool()
+		if err != nil {
+			return err
+		}
 
-		byteOffset += numBits / 8
-		numBits = numBits % 8
-		n.FrameCroppingFlag = ((n.RBSPByte[byteOffset] >> (7 - numBits)) & 0x01) == 1
-		numBits++
+		n.FrameCroppingFlag, err = bbr.ReadBool()
+		if err != nil {
+			return err
+		}
 
 		if n.FrameCroppingFlag {
-			byteOffset += numBits / 8
-			numBits = numBits % 8
-			n.FrameCropLeftOffset, numResultBits = decodeExpGolombCode(n.RBSPByte[byteOffset:], numBits)
-			numBits += numResultBits
+			n.FrameCropLeftOffset, err = bbr.ReadExpGolombCode()
+			if err != nil {
+				return err
+			}
 
-			byteOffset += numBits / 8
-			numBits = numBits % 8
-			n.FrameCropRightOffset, numResultBits = decodeExpGolombCode(n.RBSPByte[byteOffset:], numBits)
-			numBits += numResultBits
+			n.FrameCropRightOffset, err = bbr.ReadExpGolombCode()
+			if err != nil {
+				return err
+			}
 
-			byteOffset += numBits / 8
-			numBits = numBits % 8
-			n.FrameCropTopOffset, numResultBits = decodeExpGolombCode(n.RBSPByte[byteOffset:], numBits)
-			numBits += numResultBits
+			n.FrameCropTopOffset, err = bbr.ReadExpGolombCode()
+			if err != nil {
+				return err
+			}
 
-			byteOffset += numBits / 8
-			numBits = numBits % 8
-			n.FrameCropBottomOffset, numResultBits = decodeExpGolombCode(n.RBSPByte[byteOffset:], numBits)
-			numBits += numResultBits
+			n.FrameCropBottomOffset, err = bbr.ReadExpGolombCode()
+			if err != nil {
+				return err
+			}
 		}
 
-		byteOffset += numBits / 8
-		numBits = numBits % 8
-		n.VUIParametersPresentFlag = ((n.RBSPByte[byteOffset] >> (7 - numBits)) & 0x01) == 1
-		numBits++
+		n.VUIParametersPresentFlag, err = bbr.ReadBool()
+		if err != nil {
+			return err
+		}
 
 		if n.VUIParametersPresentFlag {
-			byteOffset += numBits / 8
-			numBits = numBits % 8
-			n.VUI.AspectRatioInfoPresentFlag = ((n.RBSPByte[byteOffset] >> (7 - numBits)) & 0x01) == 1
-			numBits++
+			n.VUI.AspectRatioInfoPresentFlag, err = bbr.ReadBool()
+			if err != nil {
+				return err
+			}
 
 			if n.VUI.AspectRatioInfoPresentFlag {
-				n.VUI.AspectRatioIDC = 0
-				for i := 0; i < 8; i++ {
-					byteOffset += numBits / 8
-					numBits = numBits % 8
-					n.VUI.AspectRatioIDC = (n.VUI.AspectRatioIDC << 1) | ((n.RBSPByte[byteOffset] >> (7 - numBits)) & 0x01)
-					numBits++
+				n.VUI.AspectRatioIDC, err = bbr.ReadByte()
+				if err != nil {
+					return err
 				}
+
 				if n.VUI.AspectRatioIDC == AspectRatioIDC_ExtendedSAR {
-					n.VUI.SARWidth = 0
-					n.VUI.SARHeight = 0
-					for i := 0; i < 16; i++ {
-						byteOffset += numBits / 8
-						numBits = numBits % 8
-						n.VUI.SARWidth = (n.VUI.SARWidth << 1) | uint16((n.RBSPByte[byteOffset]>>(7-numBits))&0x01)
-						numBits++
+					n.VUI.SARWidth, err = bbr.ReadUInt16()
+					if err != nil {
+						return err
 					}
-					for i := 0; i < 16; i++ {
-						byteOffset += numBits / 8
-						numBits = numBits % 8
-						n.VUI.SARHeight = (n.VUI.SARHeight << 1) | uint16((n.RBSPByte[byteOffset]>>(7-numBits))&0x01)
-						numBits++
+					n.VUI.SARHeight, err = bbr.ReadUInt16()
+					if err != nil {
+						return err
 					}
 				}
 			}
 
-			byteOffset += numBits / 8
-			numBits = numBits % 8
-			n.VUI.OverscanInfoPresentFlag = ((n.RBSPByte[byteOffset] >> (7 - numBits)) & 0x01) == 1
-			numBits++
+			n.VUI.OverscanInfoPresentFlag, err = bbr.ReadBool()
+			if err != nil {
+				return err
+			}
 
 			if n.VUI.OverscanInfoPresentFlag {
-				byteOffset += numBits / 8
-				numBits = numBits % 8
-				n.VUI.OverscanAppropriateFlag = ((n.RBSPByte[byteOffset] >> (7 - numBits)) & 0x01) == 1
-				numBits++
+				n.VUI.OverscanAppropriateFlag, err = bbr.ReadBool()
+				if err != nil {
+					return err
+				}
 			}
 
-			byteOffset += numBits / 8
-			numBits = numBits % 8
-			n.VUI.VideoSignalTypePresentFlag = ((n.RBSPByte[byteOffset] >> (7 - numBits)) & 0x01) == 1
-			numBits++
+			n.VUI.VideoSignalTypePresentFlag, err = bbr.ReadBool()
+			if err != nil {
+				return err
+			}
 
 			if n.VUI.VideoSignalTypePresentFlag {
-				n.VUI.VideoFormat = 0
-				for i := 0; i < 3; i++ {
-					byteOffset += numBits / 8
-					numBits = numBits % 8
-					n.VUI.VideoFormat = (n.VUI.VideoFormat << 1) | (n.RBSPByte[byteOffset]>>(7-numBits))&0x01
-					numBits++
+				r, err := bbr.ReadBits(3)
+				if err != nil {
+					return err
+				}
+				n.VUI.VideoFormat = byte(r & 0x07)
+
+				n.VUI.VideoFullRangeFlag, err = bbr.ReadBool()
+				if err != nil {
+					return err
 				}
 
-				byteOffset += numBits / 8
-				numBits = numBits % 8
-				n.VUI.VideoFullRangeFlag = ((n.RBSPByte[byteOffset] >> (7 - numBits)) & 0x01) == 1
-				numBits++
-
-				byteOffset += numBits / 8
-				numBits = numBits % 8
-				n.VUI.ColourDescriptionPresentFlag = ((n.RBSPByte[byteOffset] >> (7 - numBits)) & 0x01) == 1
-				numBits++
+				n.VUI.ColourDescriptionPresentFlag, err = bbr.ReadBool()
+				if err != nil {
+					return err
+				}
 
 				if n.VUI.ColourDescriptionPresentFlag {
+					n.VUI.ColourPrimaries, err = bbr.ReadByte()
+					if err != nil {
+						return err
+					}
 
-					n.VUI.ColourPrimaries = 0
-					n.VUI.TransferCharacteristics = 0
-					n.VUI.MatrixCoefficients = 0
-					for i := 0; i < 8; i++ {
-						byteOffset += numBits / 8
-						numBits = numBits % 8
-						n.VUI.ColourPrimaries = (n.VUI.ColourPrimaries << 1) | ((n.RBSPByte[byteOffset] >> (7 - numBits)) & 0x01)
-						numBits++
+					n.VUI.TransferCharacteristics, err = bbr.ReadByte()
+					if err != nil {
+						return err
 					}
-					for i := 0; i < 8; i++ {
-						byteOffset += numBits / 8
-						numBits = numBits % 8
-						n.VUI.TransferCharacteristics = (n.VUI.TransferCharacteristics << 1) | ((n.RBSPByte[byteOffset] >> (7 - numBits)) & 0x01)
-						numBits++
-					}
-					for i := 0; i < 8; i++ {
-						byteOffset += numBits / 8
-						numBits = numBits % 8
-						n.VUI.MatrixCoefficients = (n.VUI.MatrixCoefficients << 1) | ((n.RBSPByte[byteOffset] >> (7 - numBits)) & 0x01)
-						numBits++
+
+					n.VUI.MatrixCoefficients, err = bbr.ReadByte()
+					if err != nil {
+						return err
 					}
 				}
 			}
 
-			byteOffset += numBits / 8
-			numBits = numBits % 8
-			n.VUI.ChromaLocInfoPresentFlag = ((n.RBSPByte[byteOffset] >> (7 - numBits)) & 0x01) == 1
-			numBits++
+			n.VUI.ChromaLocInfoPresentFlag, err = bbr.ReadBool()
+			if err != nil {
+				return err
+			}
 
 			if n.VUI.ChromaLocInfoPresentFlag {
-				byteOffset += numBits / 8
-				numBits = numBits % 8
-				n.VUI.ChromaSampleLocTypeTopField, numResultBits = decodeExpGolombCode(n.RBSPByte[byteOffset:], numBits)
-				numBits += numResultBits
+				n.VUI.ChromaSampleLocTypeTopField, err = bbr.ReadExpGolombCode()
+				if err != nil {
+					return err
+				}
 
-				byteOffset += numBits / 8
-				numBits = numBits % 8
-				n.ChromaSampleLocTypeBottomField, numResultBits = decodeExpGolombCode(n.RBSPByte[byteOffset:], numBits)
-				numBits += numResultBits
+				n.ChromaSampleLocTypeBottomField, err = bbr.ReadExpGolombCode()
+				if err != nil {
+					return err
+				}
 			}
 
-			byteOffset += numBits / 8
-			numBits = numBits % 8
-			n.VUI.TimingInfoPresentFlag = ((n.RBSPByte[byteOffset] >> (7 - numBits)) & 0x01) == 1
-			numBits++
+			n.VUI.TimingInfoPresentFlag, err = bbr.ReadBool()
+			if err != nil {
+				return err
+			}
 
 			if n.VUI.TimingInfoPresentFlag {
-				n.VUI.NumUnitsInTick = 0
-				n.VUI.TimeScale = 0
-				for i := 0; i < 32; i++ {
-					byteOffset += numBits / 8
-					numBits = numBits % 8
-					n.VUI.NumUnitsInTick = (n.VUI.NumUnitsInTick << 1) | uint32((n.RBSPByte[byteOffset]>>(7-numBits))&0x01)
-					numBits++
+				n.VUI.NumUnitsInTick, err = bbr.ReadUInt32()
+				if err != nil {
+					return err
 				}
-				for i := 0; i < 32; i++ {
-					byteOffset += numBits / 8
-					numBits = numBits % 8
-					n.VUI.TimeScale = (n.VUI.TimeScale << 1) | uint32((n.RBSPByte[byteOffset]>>(7-numBits))&0x01)
-					numBits++
+
+				n.VUI.TimeScale, err = bbr.ReadUInt32()
+				if err != nil {
+					return err
 				}
-				byteOffset += numBits / 8
-				numBits = numBits % 8
-				n.VUI.FixedFrameRateFlag = ((n.RBSPByte[byteOffset] >> (7 - numBits)) & 0x01) == 1
-				numBits++
+
+				n.VUI.FixedFrameRateFlag, err = bbr.ReadBool()
+				if err != nil {
+					return err
+				}
 			}
 
-			byteOffset += numBits / 8
-			numBits = numBits % 8
-			n.VUI.NALHRDParametersPresentFlag = ((n.RBSPByte[byteOffset] >> (7 - numBits)) & 0x01) == 1
-			numBits++
+			n.VUI.NALHRDParametersPresentFlag, err = bbr.ReadBool()
+			if err != nil {
+				return err
+			}
 
 			if n.VUI.NALHRDParametersPresentFlag {
 				// not implemented
 				fmt.Printf("[WARN] NALHRDParametersPresentFlag is not implemented\n")
 			}
 
-			byteOffset += numBits / 8
-			numBits = numBits % 8
-			n.VUI.VCLHRDParametersPresentFlag = ((n.RBSPByte[byteOffset] >> (7 - numBits)) & 0x01) == 1
-			numBits++
+			n.VUI.VCLHRDParametersPresentFlag, err = bbr.ReadBool()
+			if err != nil {
+				return err
+			}
 
 			if n.VUI.VCLHRDParametersPresentFlag {
 				// not implemented
@@ -329,67 +348,62 @@ func (n *NAL) parseSPS() error {
 			}
 
 			if n.VUI.NALHRDParametersPresentFlag || n.VUI.VCLHRDParametersPresentFlag {
-				byteOffset += numBits / 8
-				numBits = numBits % 8
-				n.VUI.LowDelayHRDFlag = ((n.RBSPByte[byteOffset] >> (7 - numBits)) & 0x01) == 1
-				numBits++
+				n.VUI.LowDelayHRDFlag, err = bbr.ReadBool()
+				if err != nil {
+					return err
+				}
 			}
 
-			byteOffset += numBits / 8
-			numBits = numBits % 8
-			n.VUI.PicStructPresentFlag = ((n.RBSPByte[byteOffset] >> (7 - numBits)) & 0x01) == 1
-			numBits++
+			n.VUI.PicStructPresentFlag, err = bbr.ReadBool()
+			if err != nil {
+				return err
+			}
 
-			byteOffset += numBits / 8
-			numBits = numBits % 8
-			n.VUI.BitstreamRestrictionFlag = ((n.RBSPByte[byteOffset] >> (7 - numBits)) & 0x01) == 1
-			numBits++
+			n.VUI.BitstreamRestrictionFlag, err = bbr.ReadBool()
+			if err != nil {
+				return err
+			}
 
 			if n.VUI.BitstreamRestrictionFlag {
-				byteOffset += numBits / 8
-				numBits = numBits % 8
-				n.VUI.MotionVectorsOverPicBoundariesFlag = ((n.RBSPByte[byteOffset] >> (7 - numBits)) & 0x01) == 1
-				numBits++
+				n.VUI.MotionVectorsOverPicBoundariesFlag, err = bbr.ReadBool()
+				if err != nil {
+					return err
+				}
+				n.MaxBytesPerPicDenom, err = bbr.ReadExpGolombCode()
+				if err != nil {
+					return err
+				}
 
-				byteOffset += numBits / 8
-				numBits = numBits % 8
-				n.MaxBytesPerPicDenom, numResultBits = decodeExpGolombCode(n.RBSPByte[byteOffset:], numBits)
-				numBits += numResultBits
-
-				byteOffset += numBits / 8
-				numBits = numBits % 8
-				n.MaxBitsPerMBDenom, numResultBits = decodeExpGolombCode(n.RBSPByte[byteOffset:], numBits)
-				numBits += numResultBits
-
-				byteOffset += numBits / 8
-				numBits = numBits % 8
-				n.Log2MaxMVLengthHorizontal, numResultBits = decodeExpGolombCode(n.RBSPByte[byteOffset:], numBits)
-				numBits += numResultBits
-
-				byteOffset += numBits / 8
-				numBits = numBits % 8
-				n.Log2MaxMVLengthVertical, numResultBits = decodeExpGolombCode(n.RBSPByte[byteOffset:], numBits)
-				numBits += numResultBits
-
-				byteOffset += numBits / 8
-				numBits = numBits % 8
-				n.MaxNumReorderFrames, numResultBits = decodeExpGolombCode(n.RBSPByte[byteOffset:], numBits)
-				numBits += numResultBits
-
-				byteOffset += numBits / 8
-				numBits = numBits % 8
-				n.MaxDecFrameBuffering, numResultBits = decodeExpGolombCode(n.RBSPByte[byteOffset:], numBits)
-				numBits += numResultBits
+				n.MaxBitsPerMBDenom, err = bbr.ReadExpGolombCode()
+				if err != nil {
+					return err
+				}
+				n.Log2MaxMVLengthHorizontal, err = bbr.ReadExpGolombCode()
+				if err != nil {
+					return err
+				}
+				n.Log2MaxMVLengthVertical, err = bbr.ReadExpGolombCode()
+				if err != nil {
+					return err
+				}
+				n.MaxNumReorderFrames, err = bbr.ReadExpGolombCode()
+				if err != nil {
+					return err
+				}
+				n.MaxDecFrameBuffering, err = bbr.ReadExpGolombCode()
+				if err != nil {
+					return err
+				}
 			}
 		}
 
-		var trail byte
-		for numBits%8 != 0 {
-			byteOffset += numBits / 8
-			numBits = numBits % 8
-			trail = trail<<1 | ((n.RBSPByte[byteOffset] >> (7 - numBits)) & 0x01)
-			numBits++
-		}
+		// var trail byte
+		// for numBits%8 != 0 {
+		// 	byteOffset += numBits / 8
+		// 	numBits = numBits % 8
+		// 	trail = trail<<1 | ((n.RBSPByte[byteOffset] >> (7 - numBits)) & 0x01)
+		// 	numBits++
+		// }
 		// byteOffset += numBits / 8
 		// numBits = numBits % 8
 		// fmt.Printf("SPS trail: %02x numBits: %d\n", trail, numBits)

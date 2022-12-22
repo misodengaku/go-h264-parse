@@ -1,51 +1,55 @@
 package h264parse
 
 func (n *NAL) parseSEI() error {
-
-	numBits := 0
-	byteOffset := 0
-	// numResultBits := 0
+	bbr := BitByteReader{}
+	bbr.New(n.RBSPByte)
 
 	n.SEI.PayloadType = 0
 	n.SEI.PayloadSize = 0
-	nextBits := n.RBSPByte[byteOffset]
 
-	for {
-		if nextBits == 0xff {
-			n.PayloadType += 255
-			numBits += 8
-			byteOffset += numBits / 8
-			numBits = numBits % 8
-			nextBits = n.RBSPByte[byteOffset]
-			continue
-		}
-		break
+	nextBits, err := bbr.ReadByte()
+	if err != nil {
+		return err
 	}
-
-	n.PayloadType += int(nextBits)
-	numBits += 8
-	byteOffset += numBits / 8
-	numBits = numBits % 8
-	nextBits = n.RBSPByte[byteOffset]
+	for nextBits == 0xff {
+		n.SEI.PayloadType += 255
+		nextBits, err = bbr.ReadByte()
+		if err != nil {
+			return err
+		}
+	}
+	n.SEI.PayloadType += int(nextBits) // last_payload_type_byte
 
 	// read size
-	for {
-		if nextBits == 0xff {
-			n.PayloadSize += 255
-			numBits += 8
-			byteOffset += numBits / 8
-			numBits = numBits % 8
-			nextBits = n.RBSPByte[byteOffset]
-			continue
+	nextBits, err = bbr.ReadByte()
+	if err != nil {
+		return err
+	}
+	for nextBits == 0xff {
+		n.SEI.PayloadSize += 255
+		nextBits, err = bbr.ReadByte()
+		if err != nil {
+			return err
 		}
-		break
+	}
+	n.SEI.PayloadSize += int(nextBits) // last_payload_size_byte
+
+	if n.SEI.PayloadSize >= 8 {
+		n.SEI.PayloadBytes, err = bbr.ReadBytes(n.SEI.PayloadSize / 8)
+		if err != nil {
+			return err
+		}
+	}
+	if n.SEI.PayloadSize%8 != 0 {
+		r, err := bbr.ReadBits(n.SEI.PayloadSize % 8)
+		if err != nil {
+			return err
+		}
+		n.SEI.PayloadBytes = append(n.SEI.PayloadBytes, byte(r))
 	}
 
-	n.PayloadSize += int(nextBits)
-	numBits += 8
-	byteOffset += numBits / 8
-	numBits = numBits % 8
-	nextBits = n.RBSPByte[byteOffset]
+	// FIXME: implement SEI.parsePayload
+	// n.SEI.parsePayload()
 
 	return nil
 }

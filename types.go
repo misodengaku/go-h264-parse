@@ -55,12 +55,12 @@ type SEI struct {
 // Rec. ITU-T H.264 (08/2021) pp.43-45
 type SPS struct {
 	ProfileIDC                      byte
-	ConstraintSet0Flag              byte
-	ConstraintSet1Flag              byte
-	ConstraintSet2Flag              byte
-	ConstraintSet3Flag              byte
-	ConstraintSet4Flag              byte
-	ConstraintSet5Flag              byte
+	ConstraintSet0Flag              bool
+	ConstraintSet1Flag              bool
+	ConstraintSet2Flag              bool
+	ConstraintSet3Flag              bool
+	ConstraintSet4Flag              bool
+	ConstraintSet5Flag              bool
 	LevelIDC                        byte
 	ID                              uint64
 	ChromaFormatIDC                 uint64
