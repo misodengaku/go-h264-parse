@@ -33,7 +33,10 @@ func Unmarshal(data []byte) (NALUs, error) {
 		nal, err := ParseNAL(rawNALU)
 		if err != nil {
 			return NALUs{}, err
-
+		}
+		err = nal.ParseRBSP()
+		if err != nil {
+			return NALUs{}, err
 		}
 		nalus.Units = append(nalus.Units, nal)
 		// n = NAL{}
@@ -105,12 +108,6 @@ func ParseNAL(data []byte) (NAL, error) {
 		}
 	}
 	index += numBytesInRBSP
-
-	n.ParseRBSP()
-
-	// end of unit
-	// break
-	// }
 	return n, nil
 }
 
