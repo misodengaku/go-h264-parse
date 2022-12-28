@@ -39,6 +39,14 @@ func (b *BitByteReader) ReadBit() (byte, error) {
 	return result, nil
 }
 
+func (b *BitByteReader) ReadBitsAsByte(bits int) (byte, error) {
+	r, err := b.ReadBits(bits)
+	if err != nil {
+		return 0, err
+	}
+	return byte(r), err
+}
+
 func (b *BitByteReader) ReadBits(bits int) (uint64, error) {
 	if len(b.data) <= int(b.byteOffset) {
 		return 0, fmt.Errorf("not enough data")

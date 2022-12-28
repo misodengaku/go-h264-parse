@@ -115,7 +115,9 @@ type VUI struct {
 	TimeScale                          uint32
 	FixedFrameRateFlag                 bool
 	NALHRDParametersPresentFlag        bool
+	NALHRDParameters                   HRDParameters
 	VCLHRDParametersPresentFlag        bool
+	VCLHRDParameters                   HRDParameters
 	LowDelayHRDFlag                    bool
 	PicStructPresentFlag               bool
 	BitstreamRestrictionFlag           bool
@@ -126,6 +128,23 @@ type VUI struct {
 	Log2MaxMVLengthVertical            uint64
 	MaxNumReorderFrames                uint64
 	MaxDecFrameBuffering               uint64
+}
+
+type HRDParameters struct {
+	CPBCntMinus1                       uint64
+	BitRateScale                       byte
+	CPBSizeScale                       byte
+	AlternativeCPBSpecifications       []AlternativeCPBSpecification
+	InitialCPBRemovalDelayLengthMinus1 byte
+	CPBRemovalDelayLengthMinus1        byte
+	DPBOutputDelayLengthMinus1         byte
+	TimeOffsetLength                   byte
+}
+
+type AlternativeCPBSpecification struct {
+	BitRateValueMinus1 uint64
+	CPBSizeValueMinus1 uint64
+	CBRFlag            bool
 }
 
 const (

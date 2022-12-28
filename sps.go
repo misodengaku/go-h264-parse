@@ -336,20 +336,25 @@ func (n *NAL) parseSPS() error {
 				return err
 			}
 
-			if n.VUI.NALHRDParametersPresentFlag {
-				// not implemented
-				fmt.Printf("[WARN] NALHRDParametersPresentFlag is not implemented\n")
+		if n.VUI.NALHRDParametersPresentFlag {
+			n.VUI.NALHRDParameters, err = n.readHRDParams(&bbr)
+			if err != nil {
+				return err
 			}
+
+		}
 
 			n.VUI.VCLHRDParametersPresentFlag, err = bbr.ReadBool()
 			if err != nil {
 				return err
 			}
 
-			if n.VUI.VCLHRDParametersPresentFlag {
-				// not implemented
-				fmt.Printf("[WARN] VCLHRDParametersPresentFlag is not implemented\n")
+		if n.VUI.VCLHRDParametersPresentFlag {
+			n.VUI.VCLHRDParameters, err = n.readHRDParams(&bbr)
+			if err != nil {
+				return err
 			}
+		}
 
 			if n.VUI.NALHRDParametersPresentFlag || n.VUI.VCLHRDParametersPresentFlag {
 				n.VUI.LowDelayHRDFlag, err = bbr.ReadBool()
@@ -415,4 +420,55 @@ func (n *NAL) parseSPS() error {
 	}
 
 	return nil
+}
+
+func (n *NAL) readHRDParams(bbr *BitByteReader) (HRDParameters, error) {
+	var err error
+	hrdparam := HRDParameters{}
+
+	hrdparam.CPBCntMinus1, err = bbr.ReadExpGolombCode()
+	if err != nil {
+		return HRDParameters{}, err
+	}
+	hrdparam.BitRateScale, err = bbr.ReadBitsAsByte(4)
+	if err != nil {
+		return HRDParameters{}, err
+	}
+	hrdparam.CPBSizeScale, err = bbr.ReadBitsAsByte(4)
+	if err != nil {
+		return HRDParameters{}, err
+	}
+	for i := 0; i <= int(hrdparam.CPBCntMinus1); i++ {
+		a := AlternativeCPBSpecification{}
+		a.BitRateValueMinus1, err = bbr.ReadExpGolombCode()
+		if err != nil {
+			return HRDParameters{}, err
+		}
+		a.CPBSizeValueMinus1, err = bbr.ReadExpGolombCode()
+		if err != nil {
+			return HRDParameters{}, err
+		}
+		a.CBRFlag, err = bbr.ReadBool()
+		if err != nil {
+			return HRDParameters{}, err
+		}
+		hrdparam.AlternativeCPBSpecifications = append(hrdparam.AlternativeCPBSpecifications, a)
+	}
+	hrdparam.InitialCPBRemovalDelayLengthMinus1, err = bbr.ReadBitsAsByte(5)
+	if err != nil {
+		return HRDParameters{}, err
+	}
+	hrdparam.CPBRemovalDelayLengthMinus1, err = bbr.ReadBitsAsByte(5)
+	if err != nil {
+		return HRDParameters{}, err
+	}
+	hrdparam.DPBOutputDelayLengthMinus1, err = bbr.ReadBitsAsByte(5)
+	if err != nil {
+		return HRDParameters{}, err
+	}
+	hrdparam.TimeOffsetLength, err = bbr.ReadBitsAsByte(5)
+	if err != nil {
+		return HRDParameters{}, err
+	}
+	return hrdparam, nil
 }
