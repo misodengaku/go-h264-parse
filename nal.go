@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"fmt"
 	"math"
+
+	"github.com/pkg/errors"
 )
 
 func Unmarshal(data []byte) (NALUs, error) {
@@ -12,31 +14,14 @@ func Unmarshal(data []byte) (NALUs, error) {
 
 	rawNALUs := bytes.Split(data, []byte{0x00, 0x00, 0x01})
 
-	for _, rawNALU := range rawNALUs[1:] {
-		// fmt.Printf("%#v\n", rawNALU)
-		/*
-			for index = 0; index < len(rawNALU); index++ {
-				if index < 2 {
-					if rawNALU[index] != 0 {
-						return NALUs{}, fmt.Errorf("startcode is invalid. index=%d", naluIndex)
-					}
-				} else {
-					if rawNALU[index] == 1 {
-						index++
-						break
-					} else if rawNALU[index] != 0 {
-						return NALUs{}, fmt.Errorf("startcode is invalid. index=%d", naluIndex)
-					}
-				}
-			}*/
-
+	for index, rawNALU := range rawNALUs[1:] {
 		nal, err := ParseNAL(rawNALU)
 		if err != nil {
-			return NALUs{}, err
+			return NALUs{}, errors.Wrap(err, fmt.Sprintf("ParseNAL failed at packet %d", index))
 		}
 		err = nal.ParseRBSP()
 		if err != nil {
-			return NALUs{}, err
+			return NALUs{}, errors.Wrap(err, fmt.Sprintf("ParseRBSP failed at packet %d", index))
 		}
 		nalus.Units = append(nalus.Units, nal)
 		// n = NAL{}
