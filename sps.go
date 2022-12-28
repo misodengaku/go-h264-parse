@@ -31,6 +31,10 @@ func (n *NAL) parseSPS() error {
 	if err != nil {
 		return err
 	}
+	n.SPS.ConstraintSet5Flag, err = bbr.ReadBool()
+	if err != nil {
+		return err
+	}
 
 	for i := 0; i < 2; i++ {
 
