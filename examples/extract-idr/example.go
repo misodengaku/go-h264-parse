@@ -8,7 +8,7 @@ import (
 )
 
 func main() {
-	b, err := os.ReadFile("valid-1755.h264")
+	b, err := os.ReadFile("valid.h264")
 	if err != nil {
 		panic(err)
 	}
@@ -18,13 +18,27 @@ func main() {
 		panic(err)
 	}
 	filteredNALUs := make([]h264parse.NAL, 0, len(nalus.Units))
+	var lastUnitType h264parse.NALUnitType
 	for i, nal := range nalus.Units {
 		msg := ""
 
 		// drop non-IDR frame
 		if nal.UnitType != h264parse.CodedSliceNonIDRPicture {
-			filteredNALUs = append(filteredNALUs, nal)
-			msg = " => pass"
+			isPass := true
+			if nal.UnitType == h264parse.SupplementalEnhancementInformation {
+				fmt.Printf("%#v\n", nal.SEI)
+			} else if nal.UnitType == h264parse.AccessUnitDelimiter {
+				if lastUnitType == h264parse.AccessUnitDelimiter {
+					isPass = false
+					msg = " => reject"
+				}
+			}
+
+			if isPass {
+				filteredNALUs = append(filteredNALUs, nal)
+				msg = " => pass"
+			}
+			lastUnitType = nal.UnitType
 		}
 		fmt.Printf("unit %d %s%s\n", i, nal.UnitType.String(), msg)
 	}
@@ -33,5 +47,5 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	os.WriteFile("dump.h264", nb, 0755)
+	os.WriteFile("dump_valid.h264", nb, 0755)
 }
