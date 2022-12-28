@@ -101,240 +101,241 @@ func (n *NAL) parseSPS() error {
 			fmt.Printf("[WARN] SeqScalingMatrixPresentFlag is 1. not implemented\n")
 			// not implemented
 		}
+	}
 
-		n.Log2MaxFrameNumMinus4, err = bbr.ReadExpGolombCode()
+	n.Log2MaxFrameNumMinus4, err = bbr.ReadExpGolombCode()
+	if err != nil {
+		return err
+	}
+
+	n.PicOrderCntType, err = bbr.ReadExpGolombCode()
+	if err != nil {
+		return err
+	}
+
+	if n.PicOrderCntType == 0 {
+		n.Log2MaxPicOrderCntLSBMinus4, err = bbr.ReadExpGolombCode()
+		if err != nil {
+			return err
+		}
+	} else if n.PicOrderCntType == 1 {
+		n.DeltaPicOrderAlwaysZeroFlag, err = bbr.ReadBool()
 		if err != nil {
 			return err
 		}
 
-		n.PicOrderCntType, err = bbr.ReadExpGolombCode()
+		n.OffsetForNonRefPic, err = bbr.ReadExpGolombCode()
 		if err != nil {
 			return err
 		}
 
-		if n.PicOrderCntType == 0 {
-			n.Log2MaxPicOrderCntLSBMinus4, err = bbr.ReadExpGolombCode()
-			if err != nil {
-				return err
-			}
-		} else if n.PicOrderCntType == 1 {
-			n.DeltaPicOrderAlwaysZeroFlag, err = bbr.ReadBool()
-			if err != nil {
-				return err
-			}
-
-			n.OffsetForNonRefPic, err = bbr.ReadExpGolombCode()
-			if err != nil {
-				return err
-			}
-
-			n.OffsetForTopToBottomField, err = bbr.ReadExpGolombCode()
-			if err != nil {
-				return err
-			}
-
-			n.NumRefFramesInPicOrderCntCycle, err = bbr.ReadExpGolombCode()
-			if err != nil {
-				return err
-			}
-
-			for i := 0; i < int(n.NumRefFramesInPicOrderCntCycle); i++ {
-				offset, err := bbr.ReadExpGolombCode()
-				if err != nil {
-					return err
-				}
-				n.OffsetForRefFrames = append(n.OffsetForRefFrames, offset)
-			}
-		}
-
-		n.MaxNumRefFrames, err = bbr.ReadExpGolombCode()
+		n.OffsetForTopToBottomField, err = bbr.ReadExpGolombCode()
 		if err != nil {
 			return err
 		}
 
-		n.GapsInFrameNumValueAllowedFlag, err = bbr.ReadBool()
+		n.NumRefFramesInPicOrderCntCycle, err = bbr.ReadExpGolombCode()
 		if err != nil {
 			return err
 		}
 
-		n.PicWidthInMBSMinus1, err = bbr.ReadExpGolombCode()
+		for i := 0; i < int(n.NumRefFramesInPicOrderCntCycle); i++ {
+			offset, err := bbr.ReadExpGolombCode()
+			if err != nil {
+				return err
+			}
+			n.OffsetForRefFrames = append(n.OffsetForRefFrames, offset)
+		}
+	}
+
+	n.MaxNumRefFrames, err = bbr.ReadExpGolombCode()
+	if err != nil {
+		return err
+	}
+
+	n.GapsInFrameNumValueAllowedFlag, err = bbr.ReadBool()
+	if err != nil {
+		return err
+	}
+
+	n.PicWidthInMBSMinus1, err = bbr.ReadExpGolombCode()
+	if err != nil {
+		return err
+	}
+
+	n.PicHeightInMapUnitsMinus1, err = bbr.ReadExpGolombCode()
+	if err != nil {
+		return err
+	}
+
+	n.FrameMBSOnlyFlag, err = bbr.ReadBool()
+	if err != nil {
+		return err
+	}
+
+	if !n.FrameMBSOnlyFlag {
+		n.MBAdaptiveFrameFieldFlag, err = bbr.ReadBool()
+		if err != nil {
+			return err
+		}
+	}
+
+	n.Direct8x8InferenceFlag, err = bbr.ReadBool()
+	if err != nil {
+		return err
+	}
+
+	n.FrameCroppingFlag, err = bbr.ReadBool()
+	if err != nil {
+		return err
+	}
+
+	if n.FrameCroppingFlag {
+		n.FrameCropLeftOffset, err = bbr.ReadExpGolombCode()
 		if err != nil {
 			return err
 		}
 
-		n.PicHeightInMapUnitsMinus1, err = bbr.ReadExpGolombCode()
+		n.FrameCropRightOffset, err = bbr.ReadExpGolombCode()
 		if err != nil {
 			return err
 		}
 
-		n.FrameMBSOnlyFlag, err = bbr.ReadBool()
+		n.FrameCropTopOffset, err = bbr.ReadExpGolombCode()
 		if err != nil {
 			return err
 		}
 
-		if !n.FrameMBSOnlyFlag {
-			n.MBAdaptiveFrameFieldFlag, err = bbr.ReadBool()
-			if err != nil {
-				return err
-			}
+		n.FrameCropBottomOffset, err = bbr.ReadExpGolombCode()
+		if err != nil {
+			return err
 		}
+	}
 
-		n.Direct8x8InferenceFlag, err = bbr.ReadBool()
+	n.VUIParametersPresentFlag, err = bbr.ReadBool()
+	if err != nil {
+		return err
+	}
+
+	if n.VUIParametersPresentFlag {
+		n.VUI.AspectRatioInfoPresentFlag, err = bbr.ReadBool()
 		if err != nil {
 			return err
 		}
 
-		n.FrameCroppingFlag, err = bbr.ReadBool()
+		if n.VUI.AspectRatioInfoPresentFlag {
+			n.VUI.AspectRatioIDC, err = bbr.ReadByte()
+			if err != nil {
+				return err
+			}
+
+			if n.VUI.AspectRatioIDC == AspectRatioIDC_ExtendedSAR {
+				n.VUI.SARWidth, err = bbr.ReadUInt16()
+				if err != nil {
+					return err
+				}
+				n.VUI.SARHeight, err = bbr.ReadUInt16()
+				if err != nil {
+					return err
+				}
+			}
+		}
+
+		n.VUI.OverscanInfoPresentFlag, err = bbr.ReadBool()
 		if err != nil {
 			return err
 		}
 
-		if n.FrameCroppingFlag {
-			n.FrameCropLeftOffset, err = bbr.ReadExpGolombCode()
-			if err != nil {
-				return err
-			}
-
-			n.FrameCropRightOffset, err = bbr.ReadExpGolombCode()
-			if err != nil {
-				return err
-			}
-
-			n.FrameCropTopOffset, err = bbr.ReadExpGolombCode()
-			if err != nil {
-				return err
-			}
-
-			n.FrameCropBottomOffset, err = bbr.ReadExpGolombCode()
+		if n.VUI.OverscanInfoPresentFlag {
+			n.VUI.OverscanAppropriateFlag, err = bbr.ReadBool()
 			if err != nil {
 				return err
 			}
 		}
 
-		n.VUIParametersPresentFlag, err = bbr.ReadBool()
+		n.VUI.VideoSignalTypePresentFlag, err = bbr.ReadBool()
 		if err != nil {
 			return err
 		}
 
-		if n.VUIParametersPresentFlag {
-			n.VUI.AspectRatioInfoPresentFlag, err = bbr.ReadBool()
+		if n.VUI.VideoSignalTypePresentFlag {
+			r, err := bbr.ReadBits(3)
+			if err != nil {
+				return err
+			}
+			n.VUI.VideoFormat = byte(r & 0x07)
+
+			n.VUI.VideoFullRangeFlag, err = bbr.ReadBool()
 			if err != nil {
 				return err
 			}
 
-			if n.VUI.AspectRatioInfoPresentFlag {
-				n.VUI.AspectRatioIDC, err = bbr.ReadByte()
-				if err != nil {
-					return err
-				}
-
-				if n.VUI.AspectRatioIDC == AspectRatioIDC_ExtendedSAR {
-					n.VUI.SARWidth, err = bbr.ReadUInt16()
-					if err != nil {
-						return err
-					}
-					n.VUI.SARHeight, err = bbr.ReadUInt16()
-					if err != nil {
-						return err
-					}
-				}
-			}
-
-			n.VUI.OverscanInfoPresentFlag, err = bbr.ReadBool()
+			n.VUI.ColourDescriptionPresentFlag, err = bbr.ReadBool()
 			if err != nil {
 				return err
 			}
 
-			if n.VUI.OverscanInfoPresentFlag {
-				n.VUI.OverscanAppropriateFlag, err = bbr.ReadBool()
+			if n.VUI.ColourDescriptionPresentFlag {
+				n.VUI.ColourPrimaries, err = bbr.ReadByte()
+				if err != nil {
+					return err
+				}
+
+				n.VUI.TransferCharacteristics, err = bbr.ReadByte()
+				if err != nil {
+					return err
+				}
+
+				n.VUI.MatrixCoefficients, err = bbr.ReadByte()
 				if err != nil {
 					return err
 				}
 			}
+		}
 
-			n.VUI.VideoSignalTypePresentFlag, err = bbr.ReadBool()
+		n.VUI.ChromaLocInfoPresentFlag, err = bbr.ReadBool()
+		if err != nil {
+			return err
+		}
+
+		if n.VUI.ChromaLocInfoPresentFlag {
+			n.VUI.ChromaSampleLocTypeTopField, err = bbr.ReadExpGolombCode()
 			if err != nil {
 				return err
 			}
 
-			if n.VUI.VideoSignalTypePresentFlag {
-				r, err := bbr.ReadBits(3)
-				if err != nil {
-					return err
-				}
-				n.VUI.VideoFormat = byte(r & 0x07)
-
-				n.VUI.VideoFullRangeFlag, err = bbr.ReadBool()
-				if err != nil {
-					return err
-				}
-
-				n.VUI.ColourDescriptionPresentFlag, err = bbr.ReadBool()
-				if err != nil {
-					return err
-				}
-
-				if n.VUI.ColourDescriptionPresentFlag {
-					n.VUI.ColourPrimaries, err = bbr.ReadByte()
-					if err != nil {
-						return err
-					}
-
-					n.VUI.TransferCharacteristics, err = bbr.ReadByte()
-					if err != nil {
-						return err
-					}
-
-					n.VUI.MatrixCoefficients, err = bbr.ReadByte()
-					if err != nil {
-						return err
-					}
-				}
+			n.ChromaSampleLocTypeBottomField, err = bbr.ReadExpGolombCode()
+			if err != nil {
+				return err
 			}
+		}
 
-			n.VUI.ChromaLocInfoPresentFlag, err = bbr.ReadBool()
+		n.VUI.TimingInfoPresentFlag, err = bbr.ReadBool()
+		if err != nil {
+			return err
+		}
+
+		if n.VUI.TimingInfoPresentFlag {
+			n.VUI.NumUnitsInTick, err = bbr.ReadUInt32()
 			if err != nil {
 				return err
 			}
 
-			if n.VUI.ChromaLocInfoPresentFlag {
-				n.VUI.ChromaSampleLocTypeTopField, err = bbr.ReadExpGolombCode()
-				if err != nil {
-					return err
-				}
-
-				n.ChromaSampleLocTypeBottomField, err = bbr.ReadExpGolombCode()
-				if err != nil {
-					return err
-				}
-			}
-
-			n.VUI.TimingInfoPresentFlag, err = bbr.ReadBool()
+			n.VUI.TimeScale, err = bbr.ReadUInt32()
 			if err != nil {
 				return err
 			}
 
-			if n.VUI.TimingInfoPresentFlag {
-				n.VUI.NumUnitsInTick, err = bbr.ReadUInt32()
-				if err != nil {
-					return err
-				}
-
-				n.VUI.TimeScale, err = bbr.ReadUInt32()
-				if err != nil {
-					return err
-				}
-
-				n.VUI.FixedFrameRateFlag, err = bbr.ReadBool()
-				if err != nil {
-					return err
-				}
-			}
-
-			n.VUI.NALHRDParametersPresentFlag, err = bbr.ReadBool()
+			n.VUI.FixedFrameRateFlag, err = bbr.ReadBool()
 			if err != nil {
 				return err
 			}
+		}
+
+		n.VUI.NALHRDParametersPresentFlag, err = bbr.ReadBool()
+		if err != nil {
+			return err
+		}
 
 		if n.VUI.NALHRDParametersPresentFlag {
 			n.VUI.NALHRDParameters, err = n.readHRDParams(&bbr)
@@ -344,10 +345,10 @@ func (n *NAL) parseSPS() error {
 
 		}
 
-			n.VUI.VCLHRDParametersPresentFlag, err = bbr.ReadBool()
-			if err != nil {
-				return err
-			}
+		n.VUI.VCLHRDParametersPresentFlag, err = bbr.ReadBool()
+		if err != nil {
+			return err
+		}
 
 		if n.VUI.VCLHRDParametersPresentFlag {
 			n.VUI.VCLHRDParameters, err = n.readHRDParams(&bbr)
@@ -356,53 +357,52 @@ func (n *NAL) parseSPS() error {
 			}
 		}
 
-			if n.VUI.NALHRDParametersPresentFlag || n.VUI.VCLHRDParametersPresentFlag {
-				n.VUI.LowDelayHRDFlag, err = bbr.ReadBool()
-				if err != nil {
-					return err
-				}
+		if n.VUI.NALHRDParametersPresentFlag || n.VUI.VCLHRDParametersPresentFlag {
+			n.VUI.LowDelayHRDFlag, err = bbr.ReadBool()
+			if err != nil {
+				return err
 			}
+		}
 
-			n.VUI.PicStructPresentFlag, err = bbr.ReadBool()
+		n.VUI.PicStructPresentFlag, err = bbr.ReadBool()
+		if err != nil {
+			return err
+		}
+
+		n.VUI.BitstreamRestrictionFlag, err = bbr.ReadBool()
+		if err != nil {
+			return err
+		}
+
+		if n.VUI.BitstreamRestrictionFlag {
+			n.VUI.MotionVectorsOverPicBoundariesFlag, err = bbr.ReadBool()
+			if err != nil {
+				return err
+			}
+			n.MaxBytesPerPicDenom, err = bbr.ReadExpGolombCode()
 			if err != nil {
 				return err
 			}
 
-			n.VUI.BitstreamRestrictionFlag, err = bbr.ReadBool()
+			n.MaxBitsPerMBDenom, err = bbr.ReadExpGolombCode()
 			if err != nil {
 				return err
 			}
-
-			if n.VUI.BitstreamRestrictionFlag {
-				n.VUI.MotionVectorsOverPicBoundariesFlag, err = bbr.ReadBool()
-				if err != nil {
-					return err
-				}
-				n.MaxBytesPerPicDenom, err = bbr.ReadExpGolombCode()
-				if err != nil {
-					return err
-				}
-
-				n.MaxBitsPerMBDenom, err = bbr.ReadExpGolombCode()
-				if err != nil {
-					return err
-				}
-				n.Log2MaxMVLengthHorizontal, err = bbr.ReadExpGolombCode()
-				if err != nil {
-					return err
-				}
-				n.Log2MaxMVLengthVertical, err = bbr.ReadExpGolombCode()
-				if err != nil {
-					return err
-				}
-				n.MaxNumReorderFrames, err = bbr.ReadExpGolombCode()
-				if err != nil {
-					return err
-				}
-				n.MaxDecFrameBuffering, err = bbr.ReadExpGolombCode()
-				if err != nil {
-					return err
-				}
+			n.Log2MaxMVLengthHorizontal, err = bbr.ReadExpGolombCode()
+			if err != nil {
+				return err
+			}
+			n.Log2MaxMVLengthVertical, err = bbr.ReadExpGolombCode()
+			if err != nil {
+				return err
+			}
+			n.MaxNumReorderFrames, err = bbr.ReadExpGolombCode()
+			if err != nil {
+				return err
+			}
+			n.MaxDecFrameBuffering, err = bbr.ReadExpGolombCode()
+			if err != nil {
+				return err
 			}
 		}
 
