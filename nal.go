@@ -97,33 +97,24 @@ func (n *NAL) GetEBSP() []byte {
 	rbsp := n.RBSPByte
 	state := 0
 	ebsp := []byte{}
-	buf := []byte{}
 	for _, b := range rbsp {
 		switch state {
 		case 0:
-			if b == 0 {
-				buf = append(buf, b)
-				state = 1
-			} else {
-				ebsp = append(ebsp, b)
-			}
+			fallthrough
 		case 1:
 			if b == 0 {
-				buf = append(buf, b)
-				state = 2
+				state++
 			} else {
-				ebsp = append(ebsp, buf...)
-				buf = buf[:0]
-				ebsp = append(ebsp, b)
 				state = 0
 			}
+			ebsp = append(ebsp, b)
 		case 2:
 			if b == 0 || b == 1 || b == 2 {
-				ebsp = append(ebsp, buf...)
 				ebsp = append(ebsp, 0x03, b)
-				buf = buf[:0]
-				state = 0
+			} else {
+				ebsp = append(ebsp, b)
 			}
+			state = 0
 		}
 	}
 	return ebsp
