@@ -32,7 +32,7 @@ func Unmarshal(data []byte) (NALUs, error) {
 }
 
 func Marshal(ns NALUs) ([]byte, error) {
-	b := make([]byte, 1, 1024)
+	b := make([]byte, 0, 1024)
 	prefix := []byte{0x00, 0x00, 0x01}
 	for _, n := range ns.Units {
 		b = append(b, prefix...)
@@ -79,6 +79,7 @@ func ParseNAL(data []byte) (NAL, error) {
 	n.RBSPByte = make([]byte, 0, 16)
 	i := 0
 	for i = index; i < len(data); i++ {
+		// unescape EBSP
 		if (i+2) < len(data) && (data[i] == 0x00 && data[i+1] == 0x00 && data[i+2] == 0x03) {
 			n.RBSPByte = append(n.RBSPByte, data[i], data[i+1])
 			i += 2
