@@ -109,7 +109,7 @@ func (n *NAL) GetEBSP() []byte {
 			}
 			ebsp = append(ebsp, b)
 		case 2:
-			if b == 0 || b == 1 || b == 2 {
+			if b == 0 || b == 1 || b == 2 || b == 3 {
 				ebsp = append(ebsp, 0x03, b)
 			} else {
 				ebsp = append(ebsp, b)
