@@ -126,7 +126,7 @@ func (n *NAL) parsePPS() error {
 		return err
 	}
 
-	if bbr.RemainBytes() > 0 || bbr.CurrentBit() > 0 {
+	if bbr.MoreRBSPData() {
 		n.PPS.Transform8x8ModeFlag, err = bbr.ReadBool()
 		if err != nil {
 			return err

@@ -1,6 +1,9 @@
 package h264parse
 
-import "fmt"
+import (
+	"errors"
+	"fmt"
+)
 
 type BitByteReader struct {
 	data       []byte
@@ -8,10 +11,57 @@ type BitByteReader struct {
 	byteOffset uint64
 }
 
+var EOS = errors.New("End of stream reached")
+
 func (b *BitByteReader) New(data []byte) {
 	b.data = data
 	b.numBits = 0
 	b.byteOffset = 0
+}
+
+// Rec. ITU-T H.264 (08/2021) p.41
+func (b *BitByteReader) MoreDataInByteStream() bool {
+	return b.RemainBytes() > 0 || b.CurrentBit() > 0
+}
+
+// Rec. ITU-T H.264 (08/2021) p.41
+func (b *BitByteReader) MoreRBSPData() bool {
+	if !b.MoreDataInByteStream() {
+		return false
+	}
+	return !b.CheckRBSPTrailingBitsOnly()
+}
+
+// Rec. ITU-T H.264 (08/2021) p.41
+func (b *BitByteReader) CheckRBSPTrailingBitsOnly() bool {
+	byteOffset := b.byteOffset
+	numBits := b.numBits
+	isStopBitFound := false
+	for {
+		result, err := b.PeekBit(byteOffset, numBits)
+		if err != nil {
+			if errors.Is(err, EOS) {
+				break
+			}
+			panic(err)
+		}
+		if !isStopBitFound {
+			if result == 1 {
+				isStopBitFound = true
+			} else {
+				return false
+			}
+		} else {
+			if result != 0 {
+				return false
+			}
+		}
+		numBits++
+		byteOffset += uint64(numBits / 8)
+		numBits = numBits % 8
+	}
+
+	return isStopBitFound
 }
 
 func (b *BitByteReader) ReadExpGolombCode() (uint64, error) {
@@ -26,12 +76,18 @@ func (b *BitByteReader) ReadExpGolombCode() (uint64, error) {
 	return result, nil
 }
 
-func (b *BitByteReader) ReadBit() (byte, error) {
-	if len(b.data) <= int(b.byteOffset) {
-		return 0, fmt.Errorf("not enough data")
+func (b *BitByteReader) PeekBit(offset uint64, numBits int) (byte, error) {
+	if len(b.data) <= int(offset) {
+		return 0, EOS
 	}
+	return (b.data[offset] >> (7 - numBits)) & 0x01, nil
+}
 
-	result := ((b.data[b.byteOffset] >> (7 - b.numBits)) & 0x01)
+func (b *BitByteReader) ReadBit() (byte, error) {
+	result, err := b.PeekBit(b.byteOffset, b.numBits)
+	if err != nil {
+		return 0, err
+	}
 	b.numBits++
 	b.byteOffset += uint64(b.numBits / 8)
 	b.numBits = b.numBits % 8
