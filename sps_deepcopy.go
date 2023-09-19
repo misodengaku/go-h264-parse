@@ -6,7 +6,7 @@ package h264parse
 func (o SPS) DeepCopy() SPS {
 	var cp SPS = o
 	if o.OffsetForRefFrames != nil {
-		cp.OffsetForRefFrames = make([]uint64, len(o.OffsetForRefFrames))
+		cp.OffsetForRefFrames = make([]int64, len(o.OffsetForRefFrames))
 		copy(cp.OffsetForRefFrames, o.OffsetForRefFrames)
 	}
 	return cp

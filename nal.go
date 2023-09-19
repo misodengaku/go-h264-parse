@@ -147,6 +147,17 @@ func (n *NAL) ParseRBSP() error {
 	return nil
 }
 
+func decodeSignedExpGolombCode(d []byte, bitOffset int) (int64, int) {
+	codeNum, l := decodeExpGolombCode(d, bitOffset)
+	sev := int64(codeNum & 0x01)
+	sev += int64(codeNum >> 1)
+
+	if codeNum >= 2 && codeNum%2 == 0 {
+		sev *= -1
+	}
+	return sev, l
+}
+
 func decodeExpGolombCode(d []byte, bitOffset int) (uint64, int) {
 	leadingZeroBits := 0
 	b := byte(0)

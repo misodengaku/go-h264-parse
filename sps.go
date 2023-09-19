@@ -124,12 +124,12 @@ func (n *NAL) parseSPS() error {
 			return err
 		}
 
-		n.OffsetForNonRefPic, err = bbr.ReadExpGolombCode()
+		n.OffsetForNonRefPic, err = bbr.ReadSignedExpGolombCode()
 		if err != nil {
 			return err
 		}
 
-		n.OffsetForTopToBottomField, err = bbr.ReadExpGolombCode()
+		n.OffsetForTopToBottomField, err = bbr.ReadSignedExpGolombCode()
 		if err != nil {
 			return err
 		}
@@ -140,7 +140,7 @@ func (n *NAL) parseSPS() error {
 		}
 
 		for i := 0; i < int(n.NumRefFramesInPicOrderCntCycle); i++ {
-			offset, err := bbr.ReadExpGolombCode()
+			offset, err := bbr.ReadSignedExpGolombCode()
 			if err != nil {
 				return err
 			}

@@ -64,6 +64,20 @@ func (b *BitByteReader) CheckRBSPTrailingBitsOnly() bool {
 	return isStopBitFound
 }
 
+// Rec. ITU-T H.264 (08/2021) p.211
+func (b *BitByteReader) ReadSignedExpGolombCode() (int64, error) {
+	if len(b.data) <= int(b.byteOffset) {
+		return 0, fmt.Errorf("ReadExpGolombCode: not enough data")
+	}
+	result, resultBits := decodeSignedExpGolombCode(b.data[b.byteOffset:], b.numBits)
+	b.numBits += resultBits
+	b.byteOffset += uint64(b.numBits / 8)
+	b.numBits = b.numBits % 8
+
+	return result, nil
+}
+
+// Rec. ITU-T H.264 (08/2021) pp.209-210
 func (b *BitByteReader) ReadExpGolombCode() (uint64, error) {
 	if len(b.data) <= int(b.byteOffset) {
 		return 0, fmt.Errorf("not enough data")

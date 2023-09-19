@@ -96,17 +96,17 @@ func (n *NAL) parsePPS() error {
 	}
 	n.PPS.WeightedBipredIdc = highBit<<1 | lowBit
 
-	n.PPS.PicInitQPMinus26, err = bbr.ReadExpGolombCode()
+	n.PPS.PicInitQPMinus26, err = bbr.ReadSignedExpGolombCode()
 	if err != nil {
 		return err
 	}
 
-	n.PPS.PicInitQSMinus26, err = bbr.ReadExpGolombCode()
+	n.PPS.PicInitQSMinus26, err = bbr.ReadSignedExpGolombCode()
 	if err != nil {
 		return err
 	}
 
-	n.PPS.ChromaQPIndexOffset, err = bbr.ReadExpGolombCode()
+	n.PPS.ChromaQPIndexOffset, err = bbr.ReadSignedExpGolombCode()
 	if err != nil {
 		return err
 	}
@@ -158,7 +158,7 @@ func (n *NAL) parsePPS() error {
 			}
 		}
 
-		n.PPS.SecondChromaQPIndexOffset, err = bbr.ReadExpGolombCode()
+		n.PPS.SecondChromaQPIndexOffset, err = bbr.ReadSignedExpGolombCode()
 		if err != nil {
 			return err
 		}

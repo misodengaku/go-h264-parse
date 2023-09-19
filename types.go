@@ -34,16 +34,16 @@ type PPS struct {
 	NumRefIndexL1DefaultActiveMinus1      uint64
 	WeightedPredFlag                      bool
 	WeightedBipredIdc                     byte
-	PicInitQPMinus26                      uint64 // TODO: signed
-	PicInitQSMinus26                      uint64 // TODO: signed
-	ChromaQPIndexOffset                   uint64 // TODO: signed
+	PicInitQPMinus26                      int64
+	PicInitQSMinus26                      int64
+	ChromaQPIndexOffset                   int64
 	DeblockingFilterControlPresentFlag    bool
 	ConstrainedIntraPredFlag              bool
 	RedundantPicCntPresentFlag            bool
 	Transform8x8ModeFlag                  bool
 	PicScalingMatrixPresentFlag           bool
 	SeqScalingListPresentFlags            []bool
-	SecondChromaQPIndexOffset             uint64 // TODO: signed
+	SecondChromaQPIndexOffset             int64
 }
 
 type SEI struct {
@@ -73,10 +73,10 @@ type SPS struct {
 	PicOrderCntType                 uint64
 	Log2MaxPicOrderCntLSBMinus4     uint64
 	DeltaPicOrderAlwaysZeroFlag     bool
-	OffsetForNonRefPic              uint64
-	OffsetForTopToBottomField       uint64
+	OffsetForNonRefPic              int64
+	OffsetForTopToBottomField       int64
 	NumRefFramesInPicOrderCntCycle  uint64
-	OffsetForRefFrames              []uint64
+	OffsetForRefFrames              []int64
 	MaxNumRefFrames                 uint64
 	GapsInFrameNumValueAllowedFlag  bool
 	PicWidthInMBSMinus1             uint64

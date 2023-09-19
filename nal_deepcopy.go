@@ -13,29 +13,16 @@ func (o NAL) DeepCopy() NAL {
 		cp.HeaderBytes = make([]byte, len(o.HeaderBytes))
 		copy(cp.HeaderBytes, o.HeaderBytes)
 	}
-	if o.SPS.OffsetForRefFrames != nil {
-		cp.SPS.OffsetForRefFrames = make([]uint64, len(o.SPS.OffsetForRefFrames))
-		copy(cp.SPS.OffsetForRefFrames, o.SPS.OffsetForRefFrames)
+	cp.SPS = o.SPS.DeepCopy()
+	cp.PPS = o.PPS.DeepCopy()
+	cp.SEI = o.SEI.DeepCopy()
+	if o.VUI.NALHRDParameters.AlternativeCPBSpecifications != nil {
+		cp.VUI.NALHRDParameters.AlternativeCPBSpecifications = make([]AlternativeCPBSpecification, len(o.VUI.NALHRDParameters.AlternativeCPBSpecifications))
+		copy(cp.VUI.NALHRDParameters.AlternativeCPBSpecifications, o.VUI.NALHRDParameters.AlternativeCPBSpecifications)
 	}
-	if o.PPS.RunLengthMinus1 != nil {
-		cp.PPS.RunLengthMinus1 = make([]uint64, len(o.PPS.RunLengthMinus1))
-		copy(cp.PPS.RunLengthMinus1, o.PPS.RunLengthMinus1)
-	}
-	if o.PPS.TopLeft != nil {
-		cp.PPS.TopLeft = make([]uint64, len(o.PPS.TopLeft))
-		copy(cp.PPS.TopLeft, o.PPS.TopLeft)
-	}
-	if o.PPS.BottomRight != nil {
-		cp.PPS.BottomRight = make([]uint64, len(o.PPS.BottomRight))
-		copy(cp.PPS.BottomRight, o.PPS.BottomRight)
-	}
-	if o.PPS.SeqScalingListPresentFlags != nil {
-		cp.PPS.SeqScalingListPresentFlags = make([]bool, len(o.PPS.SeqScalingListPresentFlags))
-		copy(cp.PPS.SeqScalingListPresentFlags, o.PPS.SeqScalingListPresentFlags)
-	}
-	if o.SEI.PayloadBytes != nil {
-		cp.SEI.PayloadBytes = make([]byte, len(o.SEI.PayloadBytes))
-		copy(cp.SEI.PayloadBytes, o.SEI.PayloadBytes)
+	if o.VUI.VCLHRDParameters.AlternativeCPBSpecifications != nil {
+		cp.VUI.VCLHRDParameters.AlternativeCPBSpecifications = make([]AlternativeCPBSpecification, len(o.VUI.VCLHRDParameters.AlternativeCPBSpecifications))
+		copy(cp.VUI.VCLHRDParameters.AlternativeCPBSpecifications, o.VUI.VCLHRDParameters.AlternativeCPBSpecifications)
 	}
 	return cp
 }
